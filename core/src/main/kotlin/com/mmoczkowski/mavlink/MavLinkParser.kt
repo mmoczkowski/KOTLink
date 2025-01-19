@@ -187,17 +187,25 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             val crcExtra = protocols.firstNotNullOfOrNull { protocol ->
                 protocol.getCrcExtra(messageId = messageId)
-            } ?: throw UnsupportedMessageException(messageId = messageId)
+            } ?: 0
 
             crc = crc accumulate crcExtra.toUByte()
-            val checksum = ubytesToUshort(
-                low = checksumLow ?: throw IllegalStateException(),
-                high = checksumHigh ?: throw IllegalStateException()
+
+            val checksum = MavLinkFrame.Checksum(
+                expected = ubytesToUshort(
+                    low = checksumLow ?: throw IllegalStateException(),
+                    high = checksumHigh ?: throw IllegalStateException()
+                ),
+                actual = crc,
             )
 
-            if (checksum != crc) {
-                throw InvalidChecksumException(expected = checksum, actual = crc)
-            }
+            val array = payload.array()
+            val message = protocols.firstNotNullOfOrNull { protocol ->
+                protocol.fromBytes(
+                    messageId,
+                    array,
+                )
+            } ?: MavUnsupportedMessage(content = array)
 
             return when (stx) {
                 MavLinkFrame.V1.STX -> {
@@ -205,12 +213,9 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         sequenceNumber = sequenceNumber ?: throw IllegalStateException(),
                         systemId = systemId ?: throw IllegalStateException(),
                         componentId = componentId ?: throw IllegalStateException(),
-                        payload = protocols.firstNotNullOfOrNull { protocol ->
-                            protocol.fromBytes(
-                                messageId,
-                                payload.array()
-                            )
-                        } ?: throw UnsupportedMessageException(messageId = messageId),
+                        messageId = messageId,
+                        payload = message,
+                        checksum = checksum,
                     )
                 }
 
@@ -221,12 +226,9 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         sequenceNumber = sequenceNumber ?: throw IllegalStateException(),
                         systemId = systemId ?: throw IllegalStateException(),
                         componentId = componentId ?: throw IllegalStateException(),
-                        payload = protocols.firstNotNullOfOrNull { protocol ->
-                            protocol.fromBytes(
-                                messageId,
-                                payload.array()
-                            )
-                        } ?: throw UnsupportedMessageException(messageId = messageId),
+                        messageId = messageId,
+                        payload = message,
+                        checksum = checksum,
                     )
                 }
 

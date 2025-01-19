@@ -16,21 +16,25 @@
 
 package com.mmoczkowski.mavlink
 
-sealed class MavLinkFrame {
+sealed interface MavLinkFrame {
 
-    abstract val sequenceNumber: UByte
-    abstract val systemId: UByte
-    abstract val componentId: UByte
-    abstract val payload: MavLinkMessage
+    val sequenceNumber: UByte
+    val systemId: UByte
+    val componentId: UByte
+    val messageId: UInt
+    val payload: MavLinkMessage
+    val checksum: Checksum
 
-    abstract fun toBytes(): ByteArray
+    fun toBytes(): ByteArray
 
     data class V1(
         override val sequenceNumber: UByte,
         override val systemId: UByte,
         override val componentId: UByte,
+        override val messageId: UInt,
         override val payload: MavLinkMessage,
-    ) : MavLinkFrame() {
+        override val checksum: Checksum,
+    ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFEu
         }
@@ -46,8 +50,10 @@ sealed class MavLinkFrame {
         override val sequenceNumber: UByte,
         override val systemId: UByte,
         override val componentId: UByte,
+        override val messageId: UInt,
         override val payload: MavLinkMessage,
-    ) : MavLinkFrame() {
+        override val checksum: Checksum,
+    ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFDu
         }
@@ -55,5 +61,12 @@ sealed class MavLinkFrame {
         override fun toBytes(): ByteArray {
             TODO("Not yet implemented")
         }
+    }
+
+    data class Checksum(
+        val expected: UShort,
+        val actual: UShort,
+    ) {
+        val isValid: Boolean = expected == actual
     }
 }
