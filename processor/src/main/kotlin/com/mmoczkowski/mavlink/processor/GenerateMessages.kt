@@ -137,7 +137,7 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                             )
                         }
                     }
-                    .addStatement("return buffer.array()")
+                    .addStatement("return buffer.array().copyOf(buffer.position())")
                     .build()
             )
 
