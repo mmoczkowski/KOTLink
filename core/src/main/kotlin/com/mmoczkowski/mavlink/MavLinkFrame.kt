@@ -16,6 +16,10 @@
 
 package com.mmoczkowski.mavlink
 
+import com.mmoczkowski.mavlink.util.putNext
+import java.nio.ByteBuffer
+import java.nio.ByteOrder.LITTLE_ENDIAN
+
 sealed interface MavLinkFrame {
 
     val sequenceNumber: UByte
@@ -37,10 +41,24 @@ sealed interface MavLinkFrame {
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFEu
+            const val MAX_FRAME_SIZE: Int = 263
         }
 
         override fun toBytes(): ByteArray {
-            TODO("Not yet implemented")
+            val buffer = ByteBuffer.allocate(MAX_FRAME_SIZE).order(LITTLE_ENDIAN).apply {
+                putNext(STX)
+                val payloadBytes = payload.toBytes()
+                val length = payloadBytes.size.toUByte()
+                putNext(length)
+                putNext(sequenceNumber)
+                putNext(systemId)
+                putNext(componentId)
+                putNext(messageId.toUByte())
+                putNext(payloadBytes)
+                putNext(checksum.expected)
+            }
+            val frameSize: Int = buffer.position()
+            return buffer.array().copyOf(newSize = frameSize)
         }
     }
 
@@ -56,10 +74,28 @@ sealed interface MavLinkFrame {
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFDu
+            const val MAX_FRAME_SIZE: Int = 280
         }
 
         override fun toBytes(): ByteArray {
-            TODO("Not yet implemented")
+            val buffer = ByteBuffer.allocate(MAX_FRAME_SIZE).order(LITTLE_ENDIAN).apply {
+                putNext(STX)
+                val payloadBytes = payload.toBytes()
+                val length = payloadBytes.size.toUByte()
+                putNext(length)
+                putNext(inCompatibilityFlags)
+                putNext(compatibilityFlags)
+                putNext(sequenceNumber)
+                putNext(systemId)
+                putNext(componentId)
+                putNext(messageId.toUByte())
+                putNext((messageId shr 8).toUByte())
+                putNext((messageId shr 16).toUByte())
+                putNext(payloadBytes)
+                putNext(checksum.expected)
+            }
+            val frameSize: Int = buffer.position()
+            return buffer.array().copyOf(newSize = frameSize)
         }
     }
 

@@ -16,16 +16,19 @@
 
 package com.mmoczkowski.mavlink
 
+import com.mmoczkowski.mavlink.util.getNext
 import java.nio.ByteBuffer
 import kotlin.reflect.KClass
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.fail
 
 @OptIn(ExperimentalUnsignedTypes::class)
 internal fun assertFrameEquals(rawFrame: UByteArray, parsedFrame: MavLinkFrame, expectedClass: KClass<*>) {
     val buffer = ByteBuffer.wrap(rawFrame.toByteArray())
-    val stx = buffer.get().toUByte()
-    val payloadLength = buffer.get()
+    val stx: UByte = buffer.getNext()
+    val payloadLength: UByte = buffer.getNext()
 
     if (stx == MavLinkFrame.V2.STX) {
         assertIs<MavLinkFrame.V2>(parsedFrame)
@@ -35,6 +38,8 @@ internal fun assertFrameEquals(rawFrame: UByteArray, parsedFrame: MavLinkFrame, 
         assertEquals(compatibilityFlags, parsedFrame.compatibilityFlags)
     } else if (stx == MavLinkFrame.V1.STX) {
         assertIs<MavLinkFrame.V1>(parsedFrame)
+    } else {
+        fail("Unsupported STX: $stx")
     }
 
     val sequenceNumber = buffer.get().toUByte()
@@ -57,8 +62,36 @@ internal fun assertFrameEquals(rawFrame: UByteArray, parsedFrame: MavLinkFrame, 
         "Component IDs do not match: raw = $componentId, parsed = ${parsedFrame.componentId}"
     )
 
-    assertEquals(expectedClass, parsedFrame.payload::class)
+    val messageId: UInt = if (stx == MavLinkFrame.V1.STX) {
+        buffer.getNext<UByte>().toUInt()
+    } else if (stx == MavLinkFrame.V2.STX) {
+        val messageIdLow: UByte = buffer.getNext()
+        val messageIdMid: UByte = buffer.getNext()
+        val messageIdHigh: UByte = buffer.getNext()
+        ((messageIdHigh.toInt() shl 16) or (messageIdMid.toInt() shl 8) or messageIdLow.toInt()).toUInt()
+    } else {
+        fail("Unsupported STX: $stx")
+    }
 
-    val payload = ByteArray(payloadLength.toInt())
-    buffer.get(payload)
+    assertEquals(
+        messageId,
+        parsedFrame.messageId,
+    )
+
+    val payload: ByteArray = buffer.getNext(payloadLength.toInt())
+    assertContentEquals(
+        payload,
+        parsedFrame.payload.toBytes(),
+    )
+
+    val checksumLow: UByte = buffer.getNext()
+    val checksumHigh: UByte = buffer.getNext()
+    val checksum: UShort = ((checksumHigh.toUInt() shl 8) or checksumLow.toUInt()).toUShort()
+    assertEquals(
+        checksum,
+        parsedFrame.checksum.expected,
+    )
+
+    assertEquals(expectedClass, parsedFrame.payload::class)
+    assertContentEquals(rawFrame, parsedFrame.toBytes().toUByteArray())
 }

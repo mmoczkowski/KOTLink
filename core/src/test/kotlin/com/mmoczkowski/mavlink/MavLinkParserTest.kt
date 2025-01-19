@@ -21,7 +21,6 @@ import com.mmoczkowski.mavlink.minimal.MavMinimalProtocol
 import org.junit.Test
 import kotlin.test.assertFalse
 
-
 class MavLinkParserTest {
 
     private val parser = MavLinkParser(MavMinimalProtocol)
