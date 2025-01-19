@@ -108,6 +108,13 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                             .addStatement(")")
                             .build()
                     )
+                    .addProperty(
+                        PropertySpec
+                            .builder("MESSAGE_ID", UInt::class)
+                            .addModifiers(KModifier.CONST)
+                            .initializer("%LU", message.id)
+                            .build()
+                    )
                     .build()
             ).addFunction(
                 FunSpec
