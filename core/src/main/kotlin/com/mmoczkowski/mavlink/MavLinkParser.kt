@@ -205,7 +205,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                     messageId,
                     array,
                 )
-            } ?: MavUnsupportedMessage(content = array)
+            } ?: MavUnsupportedMessage(content = array.copyOf(payload.position()))
 
             return when (stx) {
                 MavLinkFrame.V1.STX -> {
