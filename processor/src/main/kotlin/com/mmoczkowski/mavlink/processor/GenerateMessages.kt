@@ -65,6 +65,13 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                                 PropertySpec
                                     .builder(field.propertyName, fieldTypeName)
                                     .initializer(field.propertyName)
+                                    .apply {
+                                        if (field.isExtension) {
+                                            addKdoc("Extension field. ${field.description}")
+                                        } else {
+                                            addKdoc(field.description.replace("%", "%%"))
+                                        }
+                                    }
                                     .build()
                             )
                         }
@@ -150,6 +157,9 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                     }
                     .addStatement("return buffer.array().copyOf(buffer.position())")
                     .build()
+            )
+            .addKdoc(
+                message.description.replace("%", "%%"),
             )
 
         val fileSpec = fileSpecBuilder
