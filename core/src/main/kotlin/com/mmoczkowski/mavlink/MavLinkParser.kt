@@ -21,10 +21,10 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
-    companion object {
-        private const val MAX_PAYLOAD_SIZE = 255
+    private companion object {
+        const val MAX_PAYLOAD_SIZE = 255
 
-        private enum class ParserState {
+        enum class ParserState {
             AWAIT_STX,
             AWAIT_PAYLOAD_LENGTH,
             AWAIT_INCOMPATIBILITY_FLAGS,
@@ -36,6 +36,12 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
             AWAIT_PAYLOAD,
             AWAIT_CHECKSUM
         }
+
+        fun ubytesToUshort(low: UByte, high: UByte): UShort =
+            ((high.toUInt() shl 8) or low.toUInt()).toUShort()
+
+        fun ubytesToUint(low: UByte, mid: UByte, high: UByte): UInt =
+            ((high.toInt() shl 16) or (mid.toInt() shl 8) or low.toInt()).toUInt()
     }
 
     private var stx: UByte? = null
@@ -51,7 +57,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
     private var payload: ByteBuffer = ByteBuffer.allocate(MAX_PAYLOAD_SIZE).order(ByteOrder.LITTLE_ENDIAN)
     private var checksumLow: UByte? = null
     private var checksumHigh: UByte? = null
-    private var crc: UShort = 0xffffu
+    private var headerCrc: UShort = 0xffffu
     private var state: ParserState = ParserState.AWAIT_STX
 
     fun parseNextByte(byte: Byte): MavLinkFrame? {
@@ -68,7 +74,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_PAYLOAD_LENGTH -> {
                 payloadLength = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
 
                 state = when (stx) {
@@ -85,7 +91,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
             // Skipped in v1
             ParserState.AWAIT_INCOMPATIBILITY_FLAGS -> {
                 inCompatibilityFlags = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 state = ParserState.AWAIT_COMPATIBILITY_FLAGS
                 return null
@@ -94,7 +100,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
             // Skipped in v1
             ParserState.AWAIT_COMPATIBILITY_FLAGS -> {
                 compatibilityFlags = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 state = ParserState.AWAIT_SEQUENCE_NUMBER
                 return null
@@ -102,7 +108,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_SEQUENCE_NUMBER -> {
                 sequenceNumber = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 state = ParserState.AWAIT_SYSTEM_ID
                 return null
@@ -110,7 +116,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_SYSTEM_ID -> {
                 systemId = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 state = ParserState.AWAIT_COMPONENT_ID
                 return null
@@ -118,7 +124,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_COMPONENT_ID -> {
                 componentId = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 state = ParserState.AWAIT_MESSAGE_ID
                 return null
@@ -126,7 +132,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_MESSAGE_ID -> {
                 val ubyte = byte.toUByte().also {
-                    crc = crc accumulate it
+                    headerCrc = headerCrc accumulate it
                 }
                 when {
                     messageIdLow == null -> {
@@ -151,7 +157,6 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
             ParserState.AWAIT_PAYLOAD -> {
                 payload.put(byte)
-                crc = crc accumulate byte.toUByte()
                 if (payload.position() == payloadLength?.toInt()) {
                     state = ParserState.AWAIT_CHECKSUM
                 }
@@ -184,28 +189,22 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                 else -> null
             } ?: throw IllegalStateException("Invalid stx: $stx")
 
-
-            val crcExtra = protocols.firstNotNullOfOrNull { protocol ->
-                protocol.getCrcExtra(messageId = messageId)
-            } ?: 0
-
-            crc = crc accumulate crcExtra.toUByte()
+            val array = payload.array().copyOf(payload.position())
+            val message = protocols.firstNotNullOfOrNull { protocol ->
+                protocol.fromBytes(
+                    messageId,
+                    array,
+                    headerCrc
+                )
+            } ?: MavLinkPayload(MavUnsupportedMessage(content = array), headerCrc)
 
             val checksum = MavLinkFrame.Checksum(
                 expected = ubytesToUshort(
                     low = checksumLow ?: throw IllegalStateException(),
                     high = checksumHigh ?: throw IllegalStateException()
                 ),
-                actual = crc,
+                actual = message.crc,
             )
-
-            val array = payload.array()
-            val message = protocols.firstNotNullOfOrNull { protocol ->
-                protocol.fromBytes(
-                    messageId,
-                    array,
-                )
-            } ?: MavUnsupportedMessage(content = array.copyOf(payload.position()))
 
             return when (stx) {
                 MavLinkFrame.V1.STX -> {
@@ -214,7 +213,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         systemId = systemId ?: throw IllegalStateException(),
                         componentId = componentId ?: throw IllegalStateException(),
                         messageId = messageId,
-                        payload = message,
+                        payload = message.message,
                         checksum = checksum,
                     )
                 }
@@ -227,7 +226,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         systemId = systemId ?: throw IllegalStateException(),
                         componentId = componentId ?: throw IllegalStateException(),
                         messageId = messageId,
-                        payload = message,
+                        payload = message.message,
                         checksum = checksum,
                     )
                 }
@@ -267,13 +266,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
         payload.rewind()
         checksumLow = null
         checksumHigh = null
-        crc = 0xffffu
+        headerCrc = 0xffffu
         state = ParserState.AWAIT_STX
     }
-
-    private fun ubytesToUshort(low: UByte, high: UByte): UShort =
-        ((high.toUInt() shl 8) or low.toUInt()).toUShort()
-
-    private fun ubytesToUint(low: UByte, mid: UByte, high: UByte): UInt =
-        ((high.toInt() shl 16) or (mid.toInt() shl 8) or low.toInt()).toUInt()
 }

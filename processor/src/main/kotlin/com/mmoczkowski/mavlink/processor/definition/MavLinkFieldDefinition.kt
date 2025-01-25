@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 
 data class MavLinkFieldDefinition(
     val type: String,
-    val arraySize: Int?,
+    val arraySize: UByte?,
     val name: String,
     val enum: String?,
     val description: String,

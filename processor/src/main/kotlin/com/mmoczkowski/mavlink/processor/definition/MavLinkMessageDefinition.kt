@@ -18,6 +18,7 @@ package com.mmoczkowski.mavlink.processor.definition
 
 import com.mmoczkowski.mavlink.processor.util.toCamelCase
 import com.mmoczkowski.mavlink.util.accumulate
+import kotlin.reflect.KClass
 
 data class MavLinkMessageDefinition(
     val id: UInt,
@@ -27,15 +28,12 @@ data class MavLinkMessageDefinition(
 ) {
     val className: String = "Mav${name.toCamelCase(true)}Message"
 
-    @OptIn(ExperimentalUnsignedTypes::class)
     val orderedFields: List<MavLinkFieldDefinition> = fields
         .sortedByDescending { field ->
-            when (field.clazz) {
-                ULong::class, ULongArray::class, Long::class, LongArray::class, Double::class, DoubleArray::class -> 8
-                UInt::class, UIntArray::class, Int::class, IntArray::class, Float::class, FloatArray::class -> 4
-                UShort::class, UShortArray::class, Short::class, ShortArray::class -> 2
-                UByte::class, UByteArray::class, Byte::class, ByteArray::class, Char::class, CharArray::class -> 1
-                else -> throw IllegalArgumentException("Unsupported type ${field.clazz.simpleName}")
+            if (field.isExtension) {
+                0u
+            } else {
+                field.clazz.typeSize()
             }
         }
 
@@ -53,5 +51,28 @@ data class MavLinkMessageDefinition(
             }
 
         (crc.toInt() and 0x00FF xor (crc.toInt() shr 8 and 0x00FF)).toByte()
+    }
+
+    val maxPayloadLengthWithoutExtensionFields: UByte = fields
+        .filterNot(MavLinkFieldDefinition::isExtension)
+        .fold(initial = 0u) { acc, field ->
+            val arraySize = field.arraySize
+            val typeSize = field.clazz.typeSize()
+            if (arraySize == null) {
+                (acc + typeSize).toUByte()
+            } else {
+                (acc + arraySize * typeSize).toUByte()
+            }
+        }
+
+    companion object {
+        @OptIn(ExperimentalUnsignedTypes::class)
+        fun KClass<*>.typeSize(): UByte = when (this) {
+            ULong::class, ULongArray::class, Long::class, LongArray::class, Double::class, DoubleArray::class -> 8u
+            UInt::class, UIntArray::class, Int::class, IntArray::class, Float::class, FloatArray::class -> 4u
+            UShort::class, UShortArray::class, Short::class, ShortArray::class -> 2u
+            UByte::class, UByteArray::class, Byte::class, ByteArray::class, Char::class, CharArray::class -> 1u
+            else -> throw IllegalArgumentException("Unsupported type ${this.simpleName}")
+        }
     }
 }

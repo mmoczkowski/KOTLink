@@ -52,8 +52,8 @@ fun File.parseMavlinkDefinition(): MavLinkProtocolDefinition {
                         val matchResult: MatchResult? = TYPE_PATTERN.toRegex().find(type)
                         val sanitisedType: String = matchResult?.groups?.get(1)?.value
                             ?: throw IllegalArgumentException("Unexpected type $type")
-                        val arraySize: Int? = try {
-                            matchResult.groups[2]?.value?.toInt()
+                        val arraySize: UByte? = try {
+                            matchResult.groups[2]?.value?.toUByte()
                         } catch (e: IndexOutOfBoundsException) {
                             null
                         }
