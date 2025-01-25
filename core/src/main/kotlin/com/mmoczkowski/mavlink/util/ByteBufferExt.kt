@@ -22,7 +22,7 @@ inline fun <reified T> ByteBuffer.getNext(): T =
     when (T::class) {
         Byte::class -> get()
         UByte::class -> get().toUByte()
-        Char::class -> char
+        Char::class -> get().toInt().toChar()
         Short::class -> short
         UShort::class -> short.toUShort()
         Int::class -> int
@@ -39,7 +39,7 @@ inline fun <reified T> ByteBuffer.getNext(size: Int): T =
     when (T::class) {
         ByteArray::class -> ByteArray(size) { get() } as T
         UByteArray::class -> UByteArray(size) { get().toUByte() } as T
-        CharArray::class -> CharArray(size) { char } as T
+        CharArray::class -> CharArray(size) { get().toInt().toChar() } as T
         ShortArray::class -> ShortArray(size) { short } as T
         UShortArray::class -> UShortArray(size) { short.toUShort() } as T
         IntArray::class -> IntArray(size) { int } as T
@@ -56,8 +56,8 @@ inline fun <reified T> ByteBuffer.putNext(value: T): ByteBuffer {
         is ByteArray -> put(value)
         is UByte -> put(value.toByte())
         is UByteArray -> put(value.toByteArray())
-        is Char -> putChar(value)
-        is CharArray -> value.forEach(::putChar)
+        is Char -> put(value.code.toByte())
+        is CharArray -> value.forEach { char -> put(char.code.toByte()) }
         is Short -> putShort(value)
         is ShortArray -> value.forEach(::putShort)
         is UShort -> putShort(value.toShort())
