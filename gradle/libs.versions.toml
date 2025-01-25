@@ -1,11 +1,11 @@
 [versions]
-kotlin = "1.8.0"
+kotlin = "2.1.0"
 
 [libraries]
-kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.7.1" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version = "1.10.1" }
 
 [plugins]
-google-ksp = { id = "com.google.devtools.ksp", version = "1.8.10-1.0.9" }
+google-ksp = { id = "com.google.devtools.ksp", version = "2.1.0-1.0.29" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlink-jvm = { id = "kotlink.jvm", version = "unspecified" }
 kotlink-maven = { id = "kotlink.maven", version = "unspecified" }
