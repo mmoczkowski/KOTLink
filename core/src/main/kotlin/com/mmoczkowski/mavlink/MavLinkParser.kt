@@ -177,7 +177,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
             }
         }
 
-        try {
+        return try {
             val messageId = when (stx) {
                 MavLinkFrame.V1.STX -> messageIdLow?.toUInt()
                 MavLinkFrame.V2.STX -> ubytesToUint(
@@ -207,7 +207,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                 actual = message.crc,
             )
 
-            return when (stx) {
+             when (stx) {
                 MavLinkFrame.V1.STX -> {
                     MavLinkFrame.V1(
                         sequenceNumber = sequenceNumber ?: throw IllegalStateException(),
@@ -234,6 +234,9 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
                 else -> throw IllegalStateException("Invalid stx: $stx")
             }
+        } catch (exception: Throwable) {
+            exception.printStackTrace()
+            null
         } finally {
             reset()
         }
