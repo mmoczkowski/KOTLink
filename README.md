@@ -10,22 +10,22 @@ MAVLink protocols, parse MAVLink messages, and even auto-generate Kotlin data cl
 
 ```kotlin
 // The core of the library
-implementation("com.mmoczkowski:kotlink-core:1.1.1")
+implementation("com.mmoczkowski:kotlink-core:1.2.0")
 
 // KTX extensions
-implementation("com.mmoczkowski:kotlink-ktx:1.1.1")
+implementation("com.mmoczkowski:kotlink-ktx:1.2.0")
 
 // MAVLink Minimal protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-minimal:1.1.1")
+implementation("com.mmoczkowski:kotlink-protocol-minimal:1.2.0")
 
 // MAVLink Common protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-common:1.1.1")
+implementation("com.mmoczkowski:kotlink-protocol-common:1.2.0")
 
 // MAVLink ArduPilot Mega protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-ardupilotmega:1.1.1")
+implementation("com.mmoczkowski:kotlink-protocol-ardupilotmega:1.2.0")
 
 // MAVLink code generation processor (only if you need to generate a protocol)
-implementation("com.mmoczkowski:kotlink-processor:1.1.1")
+implementation("com.mmoczkowski:kotlink-processor:1.2.0")
 ```
 
 ## Sample Usage
