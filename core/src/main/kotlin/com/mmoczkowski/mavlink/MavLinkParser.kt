@@ -197,7 +197,7 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                     payload.position(),
                     headerCrc
                 )
-            } ?: MavLinkPayload(MavUnsupportedMessage(content = array), headerCrc)
+            } ?: MavLinkPayload(MavUnsupportedMessage(content = array.copyOf(payload.position())), headerCrc)
 
             val checksum = MavLinkFrame.Checksum(
                 expected = ubytesToUshort(
