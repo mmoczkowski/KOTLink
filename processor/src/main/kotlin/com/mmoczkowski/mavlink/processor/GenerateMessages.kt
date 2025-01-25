@@ -156,7 +156,7 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                             )
                         }
                     }
-                    .addStatement("return buffer.array().dropLastWhile { byte -> byte == 0.toByte() }.toByteArray()")
+                    .addStatement("return buffer.array().copyOf(buffer.position())")
                     .build()
             )
             .addKdoc(
