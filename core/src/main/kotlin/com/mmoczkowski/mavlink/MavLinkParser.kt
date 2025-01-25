@@ -189,11 +189,12 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                 else -> null
             } ?: throw IllegalStateException("Invalid stx: $stx")
 
-            val array = payload.array().copyOf(payload.position())
+            val array = payload.array().copyOf()
             val message = protocols.firstNotNullOfOrNull { protocol ->
                 protocol.fromBytes(
                     messageId,
                     array,
+                    payload.position(),
                     headerCrc
                 )
             } ?: MavLinkPayload(MavUnsupportedMessage(content = array), headerCrc)
@@ -263,7 +264,8 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
         messageIdLow = null
         messageIdMid = null
         messageIdHigh = null
-        payload.rewind()
+        payload.clear()
+        payload.array().fill(0)
         checksumLow = null
         checksumHigh = null
         headerCrc = 0xffffu

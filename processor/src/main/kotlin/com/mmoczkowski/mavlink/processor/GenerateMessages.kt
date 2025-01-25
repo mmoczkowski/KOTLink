@@ -84,9 +84,10 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                         FunSpec
                             .builder("fromBytes")
                             .addParameter("data", ByteArray::class)
+                            .addParameter("payloadLength", Int::class)
                             .addParameter("headerCrc", UShort::class)
                             .returns(MavLinkPayload::class.asTypeName())
-                            .addStatement("val payloadLengthWithoutExtensionFields = min(data.size, ${message.maxPayloadLengthWithoutExtensionFields})")
+                            .addStatement("val payloadLengthWithoutExtensionFields = min(payloadLength, ${message.maxPayloadLengthWithoutExtensionFields})")
                             .addStatement("val crc = data.take(payloadLengthWithoutExtensionFields).plus(CRC_EXTRA).fold(headerCrc) { crc, byte -> crc accumulate byte.toUByte() }")
                             .addStatement(
                                 "val buffer = %T.wrap(data).order(%M)\nval message  = ${message.className}(",
@@ -155,7 +156,7 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                             )
                         }
                     }
-                    .addStatement("return buffer.array().copyOf(buffer.position())")
+                    .addStatement("return buffer.array().dropLastWhile { byte -> byte == 0.toByte() }.toByteArray()")
                     .build()
             )
             .addKdoc(

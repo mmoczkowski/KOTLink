@@ -35,7 +35,7 @@ internal fun MavLinkProtocolDefinition.generateProtocol(codeGenerator: CodeGener
         prefix = "return when(messageId) {\n",
         postfix = "\nelse -> null\n}"
     ) { message ->
-        "\t${message.id}u -> ${message.className}.fromBytes(payload, headerCrc)"
+        "\t${message.id}u -> ${message.className}.fromBytes(payload, payloadLength, headerCrc)"
     }
 
     FileSpec
@@ -50,6 +50,7 @@ internal fun MavLinkProtocolDefinition.generateProtocol(codeGenerator: CodeGener
                         .addModifiers(KModifier.OVERRIDE)
                         .addParameter("messageId", UInt::class)
                         .addParameter("payload", ByteArray::class)
+                        .addParameter("payloadLength", Int::class)
                         .addParameter("headerCrc", UShort::class)
                         .returns(MavLinkPayload::class.asTypeName().copy(nullable = true))
                         .addCode(fromBytesCodeBlock)
