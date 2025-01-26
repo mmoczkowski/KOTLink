@@ -218,7 +218,6 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         componentId = componentId ?: throw IllegalStateException(),
                         messageId = messageId,
                         payload = message,
-                        checksum = checksum,
                     )
                 }
 
@@ -231,7 +230,6 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                         componentId = componentId ?: throw IllegalStateException(),
                         messageId = messageId,
                         payload = message,
-                        checksum = checksum,
                     )
                 }
 

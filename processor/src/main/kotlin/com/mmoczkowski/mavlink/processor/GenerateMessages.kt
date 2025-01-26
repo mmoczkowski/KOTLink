@@ -75,6 +75,13 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                                     .build()
                             )
                         }
+                        classBuilder.addProperty(
+                            PropertySpec
+                                .builder("crcExtra", Byte::class)
+                                .addModifiers(KModifier.OVERRIDE)
+                                .initializer("%L", message.crcExtra)
+                                .build()
+                        )
                     }
                     .build()
             ).addType(
@@ -131,6 +138,7 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                         PropertySpec
                             .builder("CRC_EXTRA", Byte::class)
                             .addModifiers(KModifier.CONST)
+                            .addModifiers(KModifier.PRIVATE)
                             .initializer("%L", message.crcExtra)
                             .build()
                     )

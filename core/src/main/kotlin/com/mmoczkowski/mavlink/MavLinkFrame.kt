@@ -16,6 +16,7 @@
 
 package com.mmoczkowski.mavlink
 
+import com.mmoczkowski.mavlink.util.accumulate
 import com.mmoczkowski.mavlink.util.putNext
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN
@@ -27,7 +28,6 @@ sealed interface MavLinkFrame {
     val componentId: UByte
     val messageId: UInt
     val payload: MavLinkMessage
-    val checksum: UShort
 
     fun toBytes(): ByteArray
 
@@ -37,7 +37,6 @@ sealed interface MavLinkFrame {
         override val componentId: UByte,
         override val messageId: UInt,
         override val payload: MavLinkMessage,
-        override val checksum: UShort,
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFEu
@@ -55,6 +54,15 @@ sealed interface MavLinkFrame {
                 putNext(componentId)
                 putNext(messageId.toUByte())
                 putNext(payloadBytes)
+
+                val checksum = array()
+                    .take(position())
+                    .drop(1)
+                    .plus(payload.crcExtra)
+                    .fold((0xFFFFu).toUShort()) { crc, byte ->
+                        crc accumulate byte.toUByte()
+                    }
+
                 putNext(checksum)
             }
             val frameSize: Int = buffer.position()
@@ -70,7 +78,6 @@ sealed interface MavLinkFrame {
         override val componentId: UByte,
         override val messageId: UInt,
         override val payload: MavLinkMessage,
-        override val checksum: UShort,
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFDu
@@ -92,6 +99,15 @@ sealed interface MavLinkFrame {
                 putNext((messageId shr 8).toUByte())
                 putNext((messageId shr 16).toUByte())
                 putNext(payloadBytes)
+
+                val checksum = array()
+                    .take(position())
+                    .drop(1)
+                    .plus(payload.crcExtra)
+                    .fold((0xFFFFu).toUShort()) { crc, byte ->
+                        crc accumulate byte.toUByte()
+                    }
+
                 putNext(checksum)
             }
             val frameSize: Int = buffer.position()

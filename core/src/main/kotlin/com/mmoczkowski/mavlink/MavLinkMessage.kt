@@ -17,5 +17,6 @@
 package com.mmoczkowski.mavlink
 
 interface MavLinkMessage {
+    val crcExtra: Byte
     fun toBytes(): ByteArray
 }
