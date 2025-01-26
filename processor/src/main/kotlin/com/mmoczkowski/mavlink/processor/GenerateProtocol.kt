@@ -17,7 +17,7 @@
 package com.mmoczkowski.mavlink.processor
 
 import com.google.devtools.ksp.processing.CodeGenerator
-import com.mmoczkowski.mavlink.MavLinkPayload
+import com.mmoczkowski.mavlink.MavLinkMessage
 import com.mmoczkowski.mavlink.MavLinkProtocol
 import com.mmoczkowski.mavlink.processor.definition.MavLinkProtocolDefinition
 import com.squareup.kotlinpoet.ClassName
@@ -35,7 +35,7 @@ internal fun MavLinkProtocolDefinition.generateProtocol(codeGenerator: CodeGener
         prefix = "return when(messageId) {\n",
         postfix = "\nelse -> null\n}"
     ) { message ->
-        "\t${message.id}u -> ${message.className}.fromBytes(payload, payloadLength, headerCrc)"
+        "\t${message.id}u -> ${message.className}.fromBytes(payload)"
     }
 
     FileSpec
@@ -50,9 +50,7 @@ internal fun MavLinkProtocolDefinition.generateProtocol(codeGenerator: CodeGener
                         .addModifiers(KModifier.OVERRIDE)
                         .addParameter("messageId", UInt::class)
                         .addParameter("payload", ByteArray::class)
-                        .addParameter("payloadLength", Int::class)
-                        .addParameter("headerCrc", UShort::class)
-                        .returns(MavLinkPayload::class.asTypeName().copy(nullable = true))
+                        .returns(MavLinkMessage::class.asTypeName().copy(nullable = true))
                         .addCode(fromBytesCodeBlock)
                         .build()
                 )

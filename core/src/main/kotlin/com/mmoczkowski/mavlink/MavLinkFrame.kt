@@ -87,7 +87,12 @@ sealed interface MavLinkFrame {
         override fun toBytes(): ByteArray {
             val buffer = ByteBuffer.allocate(MAX_FRAME_SIZE).order(LITTLE_ENDIAN).apply {
                 putNext(STX)
-                val payloadBytes = payload.toBytes().dropLastWhile { byte -> byte == (0).toByte() }.toByteArray()
+                val payloadBytes = payload
+                    .toBytes()
+                    .dropLastWhile { byte ->
+                        byte == (0).toByte()
+                    }
+                    .toByteArray()
                 val length = payloadBytes.size.toUByte()
                 putNext(length)
                 putNext(inCompatibilityFlags)

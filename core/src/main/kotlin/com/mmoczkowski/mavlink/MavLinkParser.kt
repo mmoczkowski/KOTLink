@@ -19,6 +19,7 @@ package com.mmoczkowski.mavlink
 import com.mmoczkowski.mavlink.util.accumulate
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.min
 
 class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
 
@@ -180,22 +181,25 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                 else -> throw IllegalStateException()
             }
 
-            val array = payload.array().copyOf()
-            val payload = protocols.firstNotNullOfOrNull { protocol ->
+            val payloadArray = payload.array().copyOf()
+            val message: MavLinkMessage? = protocols.firstNotNullOfOrNull { protocol ->
                 protocol.fromBytes(
                     messageId,
-                    array,
-                    payload.position(),
-                    headerCrc
+                    payloadArray,
                 )
             }
 
-            if (payload == null) {
+            if (message == null) {
                 reset()
                 return Result.Error.UnsupportedMessage(messageId = messageId)
             }
 
-            val (message, checksum) = payload
+            val payloadLengthWithoutExtensionFields = min(payload.position(), message.lengthWithoutExtensions.toInt())
+            val checksum = payloadArray.take(payloadLengthWithoutExtensionFields)
+                .plus(message.crcExtra)
+                .fold(headerCrc) { crc, payloadByte ->
+                    crc accumulate payloadByte.toUByte()
+                }
 
             val expectedChecksum: UShort = ubytesToUshort(
                 low = checksumLow ?: throw IllegalStateException(),

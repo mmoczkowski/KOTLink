@@ -53,7 +53,7 @@ data class MavLinkMessageDefinition(
         (crc.toInt() and 0x00FF xor (crc.toInt() shr 8 and 0x00FF)).toByte()
     }
 
-    val maxPayloadLengthWithoutExtensionFields: UByte = fields
+    val lengthWithoutExtensions: UByte = fields
         .filterNot(MavLinkFieldDefinition::isExtension)
         .fold(initial = 0u) { acc, field ->
             val arraySize = field.arraySize

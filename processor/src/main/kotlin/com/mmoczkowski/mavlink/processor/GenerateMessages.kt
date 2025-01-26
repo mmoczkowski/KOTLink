@@ -18,7 +18,6 @@ package com.mmoczkowski.mavlink.processor
 
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.mmoczkowski.mavlink.MavLinkMessage
-import com.mmoczkowski.mavlink.MavLinkPayload
 import com.mmoczkowski.mavlink.processor.definition.MavLinkProtocolDefinition
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -82,6 +81,13 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                                 .initializer("%L", message.crcExtra)
                                 .build()
                         )
+                        classBuilder.addProperty(
+                            PropertySpec
+                                .builder("lengthWithoutExtensions", UByte::class)
+                                .addModifiers(KModifier.OVERRIDE)
+                                .initializer("%Lu", message.lengthWithoutExtensions)
+                                .build()
+                        )
                     }
                     .build()
             ).addType(
@@ -90,14 +96,10 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                     .addFunction(
                         FunSpec
                             .builder("fromBytes")
-                            .addParameter("data", ByteArray::class)
-                            .addParameter("payloadLength", Int::class)
-                            .addParameter("headerCrc", UShort::class)
-                            .returns(MavLinkPayload::class.asTypeName())
-                            .addStatement("val payloadLengthWithoutExtensionFields = min(payloadLength, ${message.maxPayloadLengthWithoutExtensionFields})")
-                            .addStatement("val crc = data.take(payloadLengthWithoutExtensionFields).plus(CRC_EXTRA).fold(headerCrc) { crc, byte -> crc accumulate byte.toUByte() }")
+                            .addParameter("payload", ByteArray::class)
+                            .returns(MavLinkMessage::class.asTypeName())
                             .addStatement(
-                                "val buffer = %T.wrap(data).order(%M)\nval message  = ${message.className}(",
+                                "val buffer = %T.wrap(payload).order(%M)\nval message  = ${message.className}(",
                                 ByteBuffer::class, MemberName(
                                     ByteOrder::class.asClassName(),
                                     "LITTLE_ENDIAN"
@@ -124,7 +126,7 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                                 }
                             }
                             .addStatement(")")
-                            .addStatement("return MavLinkPayload(message, crc)")
+                            .addStatement("return message")
                             .build()
                     )
                     .addProperty(
@@ -132,14 +134,6 @@ internal fun MavLinkProtocolDefinition.generateMessages(codeGenerator: CodeGener
                             .builder("MESSAGE_ID", UInt::class)
                             .addModifiers(KModifier.CONST)
                             .initializer("%LU", message.id)
-                            .build()
-                    )
-                    .addProperty(
-                        PropertySpec
-                            .builder("CRC_EXTRA", Byte::class)
-                            .addModifiers(KModifier.CONST)
-                            .addModifiers(KModifier.PRIVATE)
-                            .initializer("%L", message.crcExtra)
                             .build()
                     )
                     .build()

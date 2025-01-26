@@ -17,5 +17,5 @@
 package com.mmoczkowski.mavlink
 
 interface MavLinkProtocol {
-    fun fromBytes(messageId: UInt, payload: ByteArray, payloadLength: Int, headerCrc: UShort): MavLinkPayload?
+    fun fromBytes(messageId: UInt, payload: ByteArray): MavLinkMessage?
 }
