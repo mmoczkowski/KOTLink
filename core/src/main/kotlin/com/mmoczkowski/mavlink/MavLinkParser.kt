@@ -136,7 +136,11 @@ class MavLinkParser(private vararg val protocols: MavLinkProtocol) {
                     messageIdMid == null -> messageIdMid = nextByte
                     messageIdHigh == null -> {
                         messageIdHigh = nextByte
-                        state = ParserState.AWAIT_PAYLOAD
+                        state = if (payloadLength?.toInt() == 0) {
+                            ParserState.AWAIT_CHECKSUM
+                        } else {
+                            ParserState.AWAIT_PAYLOAD
+                        }
                     }
                 }
                 return null
