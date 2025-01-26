@@ -89,7 +89,7 @@ internal fun assertFrameEquals(rawFrame: UByteArray, parsedFrame: MavLinkFrame, 
     val checksum: UShort = ((checksumHigh.toUInt() shl 8) or checksumLow.toUInt()).toUShort()
     assertEquals(
         checksum,
-        parsedFrame.checksum.expected,
+        parsedFrame.checksum,
     )
 
     assertEquals(expectedClass, parsedFrame.payload::class)

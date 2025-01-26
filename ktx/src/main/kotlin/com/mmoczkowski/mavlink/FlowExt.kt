@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flow
 
-fun Flow<Byte>.mapToMavLink(vararg protocols: MavLinkProtocol): Flow<MavLinkFrame> = flow {
+fun Flow<Byte>.mapToMavLink(vararg protocols: MavLinkProtocol): Flow<MavLinkParser.Result> = flow {
     val parser = MavLinkParser(*protocols)
     this@mapToMavLink.collectLatest { byte ->
         val frame = parser.parseNextByte(byte)

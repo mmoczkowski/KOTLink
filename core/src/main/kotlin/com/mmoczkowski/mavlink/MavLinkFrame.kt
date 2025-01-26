@@ -27,7 +27,7 @@ sealed interface MavLinkFrame {
     val componentId: UByte
     val messageId: UInt
     val payload: MavLinkMessage
-    val checksum: Checksum
+    val checksum: UShort
 
     fun toBytes(): ByteArray
 
@@ -37,7 +37,7 @@ sealed interface MavLinkFrame {
         override val componentId: UByte,
         override val messageId: UInt,
         override val payload: MavLinkMessage,
-        override val checksum: Checksum,
+        override val checksum: UShort,
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFEu
@@ -55,7 +55,7 @@ sealed interface MavLinkFrame {
                 putNext(componentId)
                 putNext(messageId.toUByte())
                 putNext(payloadBytes)
-                putNext(checksum.expected)
+                putNext(checksum)
             }
             val frameSize: Int = buffer.position()
             return buffer.array().copyOf(newSize = frameSize)
@@ -70,7 +70,7 @@ sealed interface MavLinkFrame {
         override val componentId: UByte,
         override val messageId: UInt,
         override val payload: MavLinkMessage,
-        override val checksum: Checksum,
+        override val checksum: UShort,
     ) : MavLinkFrame {
         companion object {
             const val STX: UByte = 0xFDu
@@ -92,17 +92,10 @@ sealed interface MavLinkFrame {
                 putNext((messageId shr 8).toUByte())
                 putNext((messageId shr 16).toUByte())
                 putNext(payloadBytes)
-                putNext(checksum.expected)
+                putNext(checksum)
             }
             val frameSize: Int = buffer.position()
             return buffer.array().copyOf(newSize = frameSize)
         }
-    }
-
-    data class Checksum(
-        val expected: UShort,
-        val actual: UShort,
-    ) {
-        val isValid: Boolean = expected == actual
     }
 }

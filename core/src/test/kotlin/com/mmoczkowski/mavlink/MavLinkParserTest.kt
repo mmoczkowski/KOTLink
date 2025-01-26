@@ -19,7 +19,7 @@ package com.mmoczkowski.mavlink
 import com.mmoczkowski.mavlink.minimal.MavHeartbeatMessage
 import com.mmoczkowski.mavlink.minimal.MavMinimalProtocol
 import org.junit.Test
-import kotlin.test.assertFalse
+import kotlin.test.assertIs
 
 class MavLinkParserTest {
 
@@ -27,7 +27,7 @@ class MavLinkParserTest {
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when valid v1 frame expect parsed properly`() {
+    fun `when valid v1 frame expect message`() {
         val validV1HeartbeatFrames = listOf(
             ubyteArrayOf(0xfeu, 0x9u, 0x0u, 0x4fu, 0x4cu, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x13u, 0xau, 0x0u, 0x2u, 0x0u, 0xe6u, 0x71u),
             ubyteArrayOf(0xfeu, 0x9u, 0x1u, 0xf5u, 0xd9u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x3u, 0x8u, 0x0u, 0x1u, 0x2u, 0x3bu, 0xb3u),
@@ -38,15 +38,16 @@ class MavLinkParserTest {
         )
 
         for (rawFrame in validV1HeartbeatFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFrameEquals(rawFrame, parsedFrame, MavHeartbeatMessage::class)
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Success>(result)
+            assertFrameEquals(rawFrame, result.frame, MavHeartbeatMessage::class)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when unsupported v1 frame expect parsed properly`() {
-        val validV1HeartbeatFrames = listOf(
+    fun `when unsupported v1 frame expect message`() {
+        val unsupportedV1Frames = listOf(
             ubyteArrayOf(0xfeu, 0x9u, 0x0u, 0x4fu, 0x4cu, 0x1u, 0x0u, 0x0u, 0x0u, 0x0u, 0x13u, 0xau, 0x0u, 0x2u, 0x0u, 0xe6u, 0x71u),
             ubyteArrayOf(0xfeu, 0x9u, 0x1u, 0xf5u, 0xd9u, 0x2u, 0x0u, 0x0u, 0x0u, 0x0u, 0x3u, 0x8u, 0x0u, 0x1u, 0x2u, 0x3bu, 0xb3u),
             ubyteArrayOf(0xfeu, 0x9u, 0x2u, 0x2bu, 0xf9u, 0x3u, 0x0u, 0x0u, 0x0u, 0x0u, 0x14u, 0xfu, 0x0u, 0x4u, 0x1u, 0x78u, 0xa9u),
@@ -55,15 +56,15 @@ class MavLinkParserTest {
             ubyteArrayOf(0xfeu, 0x9u, 0x5u, 0x50u, 0xedu, 0x6u, 0x0u, 0x0u, 0x0u, 0x0u, 0xeu, 0x8u, 0x0u, 0x5u, 0x1u, 0x51u, 0x67u),
         )
 
-        for (rawFrame in validV1HeartbeatFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFrameEquals(rawFrame, parsedFrame, MavUnsupportedMessage::class)
+        for (rawFrame in unsupportedV1Frames) {
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Error.UnsupportedMessage>(result)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when valid v2 frame expect parsed properly`() {
+    fun `when valid v2 frame expect message`() {
         val validV2HeartbeatFrames = listOf(
             ubyteArrayOf(253u, 9u, 0u, 0u, 127u, 1u, 1u, 0u, 0u, 0u, 22u, 0u, 0u, 0u, 2u, 0u, 81u, 3u, 3u, 162u, 43u),
             ubyteArrayOf(253u, 9u, 0u, 0u, 135u, 1u, 1u, 0u, 0u, 0u, 22u, 0u, 0u, 0u, 2u, 0u, 81u, 3u, 3u, 248u, 35u),
@@ -81,14 +82,15 @@ class MavLinkParserTest {
             ubyteArrayOf(253u, 9u, 0u, 0u, 207u, 1u, 1u, 0u, 0u, 0u, 22u, 0u, 0u, 0u, 2u, 0u, 81u, 3u, 3u, 62u, 229u),
         )
         for (rawFrame in validV2HeartbeatFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFrameEquals(rawFrame, parsedFrame, MavHeartbeatMessage::class)
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Success>(result)
+            assertFrameEquals(rawFrame, result.frame, MavHeartbeatMessage::class)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when unsupported v2 frame expect parsed properly`() {
+    fun `when unsupported v2 frame expect unsupported message`() {
         val validV2UnsupportedFrames = listOf(
             ubyteArrayOf(253u, 31u, 0u, 0u, 32u, 1u, 1u, 1u, 0u, 0u, 11u, 0u, 1u, 1u, 11u, 0u, 1u, 1u, 11u, 0u, 0u, 1u, 70u, 0u, 0u, 0u, 255u, 255u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 100u, 148u, 146u),
             ubyteArrayOf(253u, 28u, 0u, 0u, 33u, 1u, 1u, 30u, 0u, 0u, 92u, 28u, 0u, 0u, 237u, 113u, 189u, 61u, 49u, 43u, 158u, 190u, 0u, 196u, 100u, 188u, 69u, 103u, 15u, 190u, 173u, 208u, 38u, 62u, 131u, 2u, 214u, 189u, 140u, 9u),
@@ -106,14 +108,14 @@ class MavLinkParserTest {
         )
 
         for (rawFrame in validV2UnsupportedFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFrameEquals(rawFrame, parsedFrame, MavUnsupportedMessage::class)
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Error.UnsupportedMessage>(result)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when v1 frame with invalid checksum expect exception`() {
+    fun `when v1 frame with invalid checksum expect error`() {
         val invalidV1HeartbeatFrames = listOf(
             ubyteArrayOf(0xfeu, 0x9u, 0x0u, 0x4fu, 0x4cu, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x13u, 0xau, 0x0u, 0x2u, 0x0u, 0xe6u, 0x70u),
             ubyteArrayOf(0xfeu, 0x9u, 0x1u, 0xf5u, 0xd9u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x3u, 0x8u, 0x0u, 0x1u, 0x2u, 0x4bu, 0xb3u),
@@ -124,14 +126,14 @@ class MavLinkParserTest {
         )
 
         for (rawFrame in invalidV1HeartbeatFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFalse(parsedFrame.checksum.isValid)
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Error.InvalidChecksum>(result)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when v2 frame with invalid checksum expect exception`() {
+    fun `when v2 frame with invalid checksum expect error`() {
         val invalidV2HeartbeatFrames = listOf(
             ubyteArrayOf(0xfdu, 0x9u, 0x0u, 0x0u, 0x0u, 0x31u, 0x48u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x28u, 0x10u, 0x0u, 0x6u, 0x0u, 0xa3u, 0x71u),
             ubyteArrayOf(0xfdu, 0x9u, 0x0u, 0x0u, 0x1u, 0x1eu, 0x56u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x16u, 0xfu, 0x0u, 0x1u, 0x2u, 0x7du, 0x9au),
@@ -142,24 +144,26 @@ class MavLinkParserTest {
         )
 
         for (rawFrame in invalidV2HeartbeatFrames) {
-            val parsedFrame = parser.parseNextBytes(rawFrame).first()
-            assertFalse(parsedFrame.checksum.isValid)
+            val result = parser.parseNextBytes(rawFrame).first()
+            assertIs<MavLinkParser.Result.Error.InvalidChecksum>(result)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
-    fun `when invalid frame after valid frame expect parsed properly`() {
+    fun `when invalid frame after valid frame expect message`() {
         val validFrame1 = ubyteArrayOf(0xfeu, 0x9u, 0x0u, 0x4fu, 0x4cu, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x13u, 0xau, 0x0u, 0x2u, 0x0u, 0xe6u, 0x71u)
-        val parsedValidFrame1 = parser.parseNextBytes(validFrame1)
-        assertFrameEquals(validFrame1, parsedValidFrame1.first(), MavHeartbeatMessage::class)
+        val validResult1 = parser.parseNextBytes(validFrame1).first()
+        assertIs<MavLinkParser.Result.Success>(validResult1)
+        assertFrameEquals(validFrame1, validResult1.frame, MavHeartbeatMessage::class)
 
         val invalidFrame = ubyteArrayOf(0xfdu, 0x9u, 0x0u, 0x0u, 0x1u, 0x1eu, 0x56u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x16u, 0xfu, 0x0u, 0x1u, 0x2u, 0x7du, 0x9au)
-        val parsedInvalidFrame = parser.parseNextBytes(invalidFrame).first()
-        assertFalse(parsedInvalidFrame.checksum.isValid)
+        val invalidResult = parser.parseNextBytes(invalidFrame).first()
+        assertIs<MavLinkParser.Result.Error.InvalidChecksum>(invalidResult)
 
         val validFrame2 = ubyteArrayOf(0xfeu, 0x9u, 0x3u, 0x33u, 0x1cu, 0x0u, 0x0u, 0x0u, 0x0u, 0x0u, 0x2au, 0x9u, 0x0u, 0x5u, 0x2u, 0x47u, 0x47u)
-        val parsedValidFrame2 = parser.parseNextBytes(validFrame2)
-        assertFrameEquals(validFrame2, parsedValidFrame2.first(), MavHeartbeatMessage::class)
+        val validResult2 = parser.parseNextBytes(validFrame2).first()
+        assertIs<MavLinkParser.Result.Success>(validResult2)
+        assertFrameEquals(validFrame2, validResult2.frame, MavHeartbeatMessage::class)
     }
 }

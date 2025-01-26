@@ -24,7 +24,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 
-fun InputStream.asMavLinkFlow(vararg protocols: MavLinkProtocol): Flow<MavLinkFrame> = flow {
+fun InputStream.asMavLinkFlow(vararg protocols: MavLinkProtocol): Flow<MavLinkParser.Result> = flow {
     val parser = MavLinkParser(*protocols)
     withContext(Dispatchers.IO) {
         while (isActive) {
