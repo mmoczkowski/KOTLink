@@ -26,7 +26,7 @@ data class MavLinkMessageDefinition(
     val description: String,
     val fields: List<MavLinkFieldDefinition>
 ) {
-    val className: String = "Mav${name.toCamelCase(true)}Message"
+    val className: String = "MavLink${name.toCamelCase(true)}Message"
 
     val orderedFields: List<MavLinkFieldDefinition> = fields
         .sortedByDescending { field ->

@@ -88,7 +88,7 @@ fun File.parseMavlinkDefinition(): MavLinkProtocolDefinition {
         MavLinkEnumDefinition(name, description, entries)
     }
 
-    return MavLinkProtocolDefinition(name = "Mav${nameWithoutExtension.toCamelCase(true)}Protocol", messages, enums)
+    return MavLinkProtocolDefinition(name = "MavLink${nameWithoutExtension.toCamelCase(true)}Protocol", messages, enums)
 }
 
 private fun NodeList.asElementList(): List<Element> = (0 until length).map { index -> item(index) as Element }
