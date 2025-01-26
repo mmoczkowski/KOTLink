@@ -10,22 +10,22 @@ MAVLink protocols, parse MAVLink messages, and even auto-generate Kotlin data cl
 
 ```kotlin
 // The core of the library
-implementation("com.mmoczkowski:kotlink-core:1.2.0")
+implementation("com.mmoczkowski:kotlink-core:2.0.0")
 
 // KTX extensions
-implementation("com.mmoczkowski:kotlink-ktx:1.2.0")
+implementation("com.mmoczkowski:kotlink-ktx:2.0.0")
 
 // MAVLink Minimal protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-minimal:1.2.0")
+implementation("com.mmoczkowski:kotlink-protocol-minimal:2.0.0")
 
 // MAVLink Common protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-common:1.2.0")
+implementation("com.mmoczkowski:kotlink-protocol-common:2.0.0")
 
 // MAVLink ArduPilot Mega protocol implementation
-implementation("com.mmoczkowski:kotlink-protocol-ardupilotmega:1.2.0")
+implementation("com.mmoczkowski:kotlink-protocol-ardupilotmega:2.0.0")
 
 // MAVLink code generation processor (only if you need to generate a protocol)
-implementation("com.mmoczkowski:kotlink-processor:1.2.0")
+implementation("com.mmoczkowski:kotlink-processor:2.0.0")
 ```
 
 ## Sample Usage
@@ -33,26 +33,36 @@ implementation("com.mmoczkowski:kotlink-processor:1.2.0")
 Utilize the `MavLinkParser` class as demonstrated:
 
 ```kotlin
-val parser = MavLinkParser(MinimalMavlinkProtocol, CommonMavLinkProtocol)
-val bytes = ... // your data
-val frames = parser.parseNextBytes(bytes)
-frames.forEach { frame ->
-    when (frame) {
-        is MavLinkFrame.V1 -> // handle MavLink v1 frame
-        is MavLinkFrame.V2 -> // handle MavLink v2 frame
+val parser = MavLinkParser(MavLinkMinimalProtocol, MavLinkCommonProtocol)
+val nextByte: Byte = // Incoming data
+val result: MavLinkParser.Result = parser.parseNextByte(nextByte)
+if (result is MavLinkParser.Success) {
+    // Handle success
+    val payload: MavLinkMessage = result.frame.payload
+    if (payload is MavLinkHeartbeatMessage) {
+        // Handle individual messages
     }
+} else {
+    // Handle error
 }
 ```
 
 The Kotlin Flow extension `mapToMavLink` can be applied as follows:
 
 ```kotlin
-val flow: Flow<Byte> = ...
-val mavlinkFlow = flow.mapToMavLink(MinimalMavlinkProtocol, CommonMavLinkProtocol)
-mavlinkFlow.collect { frame ->
-    when (frame) {
-        is MavLinkFrame.V1 -> // handle MavLink v1 frame
-        is MavLinkFrame.V2 -> // handle MavLink v2 frame
+val flow: Flow<Byte> = // Incoming data 
+val mavlinkFlow = flow.mapToMavLink(MavLinkMinimalProtocol, MavLinkCommonProtocol)
+mavlinkFlow.collect { result ->
+    when (result) {
+        if (result is MavLinkParser.Success) {
+            // Handle success
+            val payload: MavLinkMessage = result.frame.payload
+            if (payload is MavLinkHeartbeatMessage) {
+                // Handle individual messages
+            }
+        } else {
+            // Handle error
+        }
     }
 }
 ```
@@ -74,7 +84,7 @@ The `:core` module forms the backbone of KOTLink, providing essential MAVLink cl
 
 - `MavLinkFrame`: This sealed class symbolizes a parsed MAVLink frame, containing two subclasses for `V1` and `V2` MAVLink versions.
 - `MavLinkMessage`: A representative interface for a MAVLink message, encapsulating the function `toBytes(): ByteArray` for serialization of the message into a raw payload.
-- `MavLinkProtocol`: This interface depicts a MAVLink subset, furnished with methods `fromBytes(messageId: UInt, payload: ByteArray): MavLinkMessage?` and `getCrcExtra(messageId: UInt): Byte?`.
+- `MavLinkProtocol`: This interface depicts a MAVLink subset, furnished with methods `fromBytes(messageId: UInt, payload: ByteArray): MavLinkMessage?`.
 - `MavLinkParser`: This class, essential for parsing sequences of bytes into a `MavLinkFrame` containing a `MavLinkMessage`, uses the provided MAVLink `XML` definitions for parsing.
 
 ### :processor
